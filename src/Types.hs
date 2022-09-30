@@ -27,7 +27,7 @@ instance ToJSON Coord
 -- Document represents a document which is used to
 -- communicate with a game server
 data Document =
-      DMap [(String, Document)] -- first list is 3 members long
+      DMap [(String, Document)]
     | DList [Document]
     | DInteger Int
     | DString String
