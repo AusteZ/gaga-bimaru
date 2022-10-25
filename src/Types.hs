@@ -47,3 +47,9 @@ instance FromJSON Document where
 
 class ToDocument a where
     toDocument :: a -> Document
+
+instance ToDocument Check where
+    toDocument a@(Check x) = DList (parseList x) where 
+        parseList :: [Coord] -> [Document]
+        parseList ((Coord x y):cs) = DInteger (x) : DInteger (y) : parseList cs
+        parseList [] = []
