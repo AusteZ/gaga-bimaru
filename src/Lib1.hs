@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wno-unused-top-binds #-}
 module Lib1(
-    State(..), emptyState, gameStart, render, mkCheck, toggle, hint
+    State(..), emptyState, gameStart, render, mkCheck, toggle, hint, mergesort
 ) where
 
 import Types
