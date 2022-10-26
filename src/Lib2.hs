@@ -21,11 +21,11 @@ renderDocument (DList ds) = "{coords: [" ++ init (init (coordToYaml ds)) ++ "]}"
 -- Errors are reported via Either but not error 
 gameStart :: State -> Document -> Either String State
 --  gameStart s _ = Right s
-gameStart (State sg soR soC sh shC) (DMap (x1:x2:x3:_)) = do
+gameStart (State g _ _ _ hC) (DMap (x1:x2:x3:_)) = do
     oR <- validate "occupied_rows" x3
     oC <- validate "occupied_cols" x2
     h <- hintparse x1
-    return (State sg oR oC h shC)
+    return (State g oR oC h hC)
     where
         validate :: String -> (String,Document) -> Either String [Int]
         validate check (seccheck, DMap(x1:x2:_)) = if check == seccheck
@@ -51,8 +51,24 @@ gameStart (State sg soR soC sh shC) (DMap (x1:x2:x3:_)) = do
 -- Errors are reported via Either but not error 
 hint :: State -> Document -> Either String State
 --hint (State l) h = Right $ State $ ("Hint " ++ show h) : l
-hint s d = Right s
--- hint (State g oR oC h _) (DMap ((_,DList x):_)) = State{
+-- hint s d = Right s
+hint (State g oR oC h _) (DMap ((check, DList xs):_)) = do
+    hC <- traverseList xs
+    return (State g oR oC h hC)
+    where
+        traverseList :: [Document] -> Either String [Coord]
+        traverseList ((DMap ((_, DInteger num1):(_, DInteger num2):_)):xs) = do
+            let list = traverseList xs
+            case list of
+                Right a -> return (mergesort((Coord num1 num2) : a))
+                Left b -> Left b
+        traverseList [] = Right []
+        traverseList _ = Left "Error occured while parsing input from the server"
+hint _ _ = Left "Error occured while parsing input from the server"
+
+
+-- hint (State g oR oC h _) (DMap ((_,DList x):_)) = 
+--     State{
 --     guess = g,
 --     ocRows = oR,
 --     ocCols = oC,
