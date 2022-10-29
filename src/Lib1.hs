@@ -18,7 +18,7 @@ data State = State {
     hints :: Int,
     hintCoords :: [Coord]
     }
-    deriving Show
+    deriving (Show, Eq)
 
 -- IMPLEMENT
 -- This is very initial state of your program

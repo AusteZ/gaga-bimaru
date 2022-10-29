@@ -12,15 +12,28 @@ import Types
 -- IMPLEMENT
 -- Renders document to yaml
 renderDocument :: Document -> String
-renderDocument (DList ds) = "{coords: [" ++ init (init (coordToYaml ds)) ++ "]}" where
-    coordToYaml :: [Document] -> String
-    coordToYaml ((DInteger x):(DInteger y):ds) = "{col: " ++ show x ++ ", row: " ++ show y ++ "}, " ++ coordToYaml ds
-    coordToYaml [] = ""
+renderDocument (DList ds) = validate ds where
+    validate :: [Document] -> String
+    validate ds = do
+        let list = parseLeftRight (traverseList ds)
+        if list == "An even amount of DIntegers in DList were expected."
+        then list else "{coords: [" ++ init (init list) ++ "]}"
+    traverseList :: [Document] -> Either String String
+    traverseList ((DInteger x):(DInteger y):xs) = do
+            let list = traverseList xs
+            case list of
+                Right a -> return ("{col: " ++ show x ++ ", row: " ++ show y ++ "}, " ++ a)
+                Left b -> Left b
+    traverseList [] = Right ""
+    traverseList _ = Left "no"
+    parseLeftRight :: Either String String -> String
+    parseLeftRight (Left a) = "An even amount of DIntegers in DList were expected."
+    parseLeftRight (Right a) = a
+renderDocument _ = "A non DList was passed to renderDocument."
 -- IMPLEMENT
 -- This adds game data to initial state
 -- Errors are reported via Either but not error 
 gameStart :: State -> Document -> Either String State
---  gameStart s _ = Right s
 gameStart (State g _ _ _ hC) (DMap (x1:x2:x3:_)) = do
     oR <- validate "occupied_rows" x3
     oC <- validate "occupied_cols" x2
@@ -29,7 +42,7 @@ gameStart (State g _ _ _ hC) (DMap (x1:x2:x3:_)) = do
     where
         validate :: String -> (String,Document) -> Either String [Int]
         validate check (seccheck, DMap(x1:x2:_)) = if check == seccheck
-            then traverseList x1 x2
+            then traverseList 10 x1 x2
             else Left ("The input from server is not labeled as expected (" ++ check ++ ")")
         validate _ _ = Left "Error occured while parsing input from the server"
         hintparse :: (String, Document) -> Either String Int
@@ -37,15 +50,16 @@ gameStart (State g _ _ _ hC) (DMap (x1:x2:x3:_)) = do
             then Right num else Left "The input from server is not labeled as expected (number_of_hints)"
         hintparse _ = Left "Error occured while parsing input from the server"
 
-        traverseList :: (String,Document) -> (String,Document) -> Either String [Int]
-        traverseList (_, DInteger num) (_, DMap(x1:x2:_)) = do
-            let list = traverseList x1 x2
+        traverseList :: Int -> (String,Document) -> (String,Document) -> Either String [Int]
+        traverseList nr (_, DInteger num) (_, DMap(x1:x2:_)) = do
+            let list = traverseList (nr-1) x1 x2
             case list of
                 Right a -> return (num : a)
                 Left b -> Left b
-        traverseList (_, DInteger num) (_, DNull) = Right [num]
-        traverseList _ _ = Left "Error occured while parsing input from the server"
-        
+        traverseList nr (_, DInteger num) (_, DNull) = if nr == 0 then Right [num]
+        else Left ("The number of coordinates passed was too" ++ if nr > 0 then "hight" else "low")
+        traverseList _ _ _ = Left "Unexpected input in DMap (a DInteger and second another DMap or DNull)"
+gameStart _ _ = Left "Error occured while parsing input from the server"
 -- IMPLEMENT
 -- Adds hint data to the game state
 -- Errors are reported via Either but not error 
@@ -65,33 +79,6 @@ hint (State g oR oC h _) (DMap ((check, DList xs):_)) = do
         traverseList [] = Right []
         traverseList _ = Left "Error occured while parsing input from the server"
 hint _ _ = Left "Error occured while parsing input from the server"
-
-
--- hint (State g oR oC h _) (DMap ((_,DList x):_)) = 
---     State{
---     guess = g,
---     ocRows = oR,
---     ocCols = oC,
---     hints = h,
---     hintCoords = mergesort (traverseList x)
--- } where
---     traverseList :: [Document] -> [Coord]
---     traverseList ((DMap (x1:x2:_)):xs) = Coord (getInt x1) (getInt x2) : traverseList xs
---     traverseList _ = []
---     getInt :: (String, Document) -> Int
---     getInt (_,DInteger x) = x
---     getInt _ = -1
--- hint s _ = s
-
-
-
-
-
-
-
-
-
--- data Either = Left a I Right a
 
 
 
