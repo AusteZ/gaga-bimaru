@@ -45,7 +45,7 @@ gameStart _ (DMap (x1:x2:x3:_)) = State {
     parseDI _ = -1
 
     traverseList :: (String,Document) -> [Int]
-    traverseList (_, DMap (x1:x2:_)) = traverseList x1 ++ traverseList x2
+    traverseList (_, DMap (y1:y2:_)) = traverseList y1 ++ traverseList y2
     traverseList (_ , DInteger i) = [i]
     traverseList (_, _) = []
 gameStart _ _ = emptyState
@@ -58,27 +58,27 @@ render (State g oR oC _ hC) = "     " ++ colAdder oC ++ rowAdder g oR 0
     where
         colAdder :: [Int] -> String
         colAdder [] = "\n     " ++ showChs 'A'
-        colAdder (oC:oCs) = show oC  ++ " " ++ colAdder oCs
+        colAdder (oCx:oCxs) = show oCx  ++ " " ++ colAdder oCxs
 
         showChs :: Char -> String
         showChs 'K' = []
         showChs ch = ch : " " ++ showChs (succ ch)
 
-        rowAdder :: [Coord] -> [Int] -> Int -> String
-        rowAdder g (oR:oRs) n 
+        rowAdder :: [Coord] -> [Int] -> Int -> String 
+        rowAdder gx (oRx:oRxs) n 
             | n == 10 = ""
-            | otherwise = "\n" ++ show oR ++ "  " ++ show n ++ fillRow n 0 g hC ++ rowAdder g oRs (n+1)
+            | otherwise = "\n" ++ show oRx ++ "  " ++ show n ++ fillRow n 0 gx hC ++ rowAdder gx oRxs (n+1)
         rowAdder _ _ _ = ""
         fillRow :: Int -> Int -> [Coord] -> [Coord] -> String
-        fillRow n l (g@(Coord gc gr):gs) (h@(Coord hc hr):hs)
-            | gr == hr && gc == hc = fillRow n l (g:gs) hs
-            | gr == n && (hr > gr || (hr == gr && hc > gc)) = guessAdder l g "x" ++ fillRow n (gc+1) gs (h:hs)
-            | hr == n && (hr < gr || (hr == gr && hc < gc)) = guessAdder l h "o" ++ fillRow n (hc+1) (g:gs) hs
+        fillRow n l (gx@(Coord gc gr):gs) (h@(Coord hc hr):hs)
+            | gr == hr && gc == hc = fillRow n l (gx:gs) hs
+            | gr == n && (hr > gr || (hr == gr && hc > gc)) = guessAdder l gx "x" ++ fillRow n (gc+1) gs (h:hs)
+            | hr == n && (hr < gr || (hr == gr && hc < gc)) = guessAdder l h "o" ++ fillRow n (hc+1) (gx:gs) hs
             | gr < n = fillRow n l gs (h:hs)
-            | hr < n = fillRow n l (g:gs) hs
+            | hr < n = fillRow n l (gx:gs) hs
             | otherwise = cycleEmpty (10-l)
-        fillRow n l (g@(Coord gc gr):gs) [] 
-            | n == gr = guessAdder l g "x" ++ fillRow n (gc+1) gs []
+        fillRow n l (gx@(Coord gc gr):gs) [] 
+            | n == gr = guessAdder l gx "x" ++ fillRow n (gc+1) gs []
             | n > gr = fillRow n l gs [] 
             | otherwise = cycleEmpty (10-l)
         fillRow n l [] (h@(Coord hc hr):hs)
@@ -109,7 +109,7 @@ toggle (State g oR oC h hC) strs = State{
     hintCoords = hC
 } where
     addCoord :: [String] -> [Coord]
-    addCoord ((a:b:_):strs)  = Coord (addBoth 'A' 0 a) (addBoth '0' 0 b) : addCoord strs
+    addCoord ((a:b:_):strxs)  = Coord (addBoth 'A' 0 a) (addBoth '0' 0 b) : addCoord strxs
     addCoord _ = []
     addBoth:: Char -> Int -> Char -> Int
     addBoth l i ch = if l == ch then i else addBoth (succ l) (i+1) ch
@@ -128,7 +128,7 @@ hint (State g oR oC h _) (DMap ((_,DList x):_)) = State{
     traverseList ((DMap (x1:x2:_)):xs) = Coord (getInt x1) (getInt x2) : traverseList xs
     traverseList _ = []
     getInt :: (String, Document) -> Int
-    getInt (_,DInteger x) = x
+    getInt (_,DInteger xx) = xx
     getInt _ = -1
 hint s _ = s
 
