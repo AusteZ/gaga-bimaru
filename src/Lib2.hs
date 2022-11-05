@@ -10,32 +10,44 @@ import Types
 -- First, make Check an instance of ToDocument class
 
 instance ToDocument Check where
-    toDocument (Check x) = DList (parseList x) where 
+    toDocument (Check x) = DMap [("coords", DList (parseList x))]
+        where
         parseList :: [Coord] -> [Document]
-        parseList ((Coord z y):cs) = DInteger (z) : DInteger (y) : parseList cs
+        parseList ((Coord z y):cs) = (DMap [("col", DInteger z),("row", DInteger y)]) : parseList cs
         parseList [] = []
 
 -- IMPLEMENT
 -- Renders document to yaml
 renderDocument :: Document -> String
-renderDocument (DList as) = validate as where
-    validate :: [Document] -> String
-    validate ds = do
-        let list = parseLeftRight (traverseList ds)
-        if list == "An even amount of DIntegers in DList were expected."
-        then list else "{coords: [" ++ init (init list) ++ "]}"
-    traverseList :: [Document] -> Either String String
-    traverseList ((DInteger x):(DInteger y):xs) = do
-            let list = traverseList xs
-            case list of
-                Right a -> return ("{col: " ++ show x ++ ", row: " ++ show y ++ "}, " ++ a)
-                Left b -> Left b
-    traverseList [] = Right ""
-    traverseList _ = Left "no"
-    parseLeftRight :: Either String String -> String
-    parseLeftRight (Left _) = "An even amount of DIntegers in DList were expected."
-    parseLeftRight (Right a) = a
-renderDocument _ = "A non DList was passed to renderDocument."
+renderDocument d = "---" ++ (formatYaml "\n" d)
+
+formatYaml :: String -> Document -> String
+formatYaml che (DList ds) = formatList (checkcheck che) ds
+    where
+        formatList :: String -> [Document] -> String
+        formatList check (x:xs) = (if elem ':' check then ":" else "") ++ formatYaml (nextCheck check) x ++ formatList (nextCheck check) xs
+        formatList _ [] = ""
+        nextCheck :: String -> String
+        nextCheck check
+            | elem ':' check = "\n" ++ (take ((length (check))-5) (cycle " ")) ++ "- "
+            | otherwise = check
+        checkcheck :: String -> String
+        checkcheck check
+            | elem ':' check = "\n" ++ init (init check) ++ "- "
+            | otherwise = check ++ "- "
+formatYaml che (DMap ds) = formatMap che ds
+    where
+        formatMap :: String -> [(String, Document)] -> String
+        formatMap _ [] = ""
+        formatMap check ((str,x):xs) = check ++ str ++ formatYaml ((if elem ':' check then "" else ":")++(nextCheck check) ++ "  ") x ++ formatMap (nextCheck check) xs
+        nextCheck :: String -> String
+        nextCheck check
+            | elem '-' check = "\n" ++ (take ((length (check))-1) (cycle " "))
+            | otherwise = check
+formatYaml che (DString str) = (if (elem ':' che) then ": " else che) ++ "\"" ++ str ++ "\""
+formatYaml che (DInteger num) = (if (elem ':' che) then ": " else che) ++ (show num)
+formatYaml che DNull = (if (elem ':' che) then ": " else che) ++ "~"
+
 -- IMPLEMENT
 -- This adds game data to initial state
 -- Errors are reported via Either but not error 
