@@ -13,31 +13,75 @@ main = defaultMain (testGroup "Tests" [
 
 toYamlTests :: TestTree
 toYamlTests = testGroup "Document to yaml"
-  [   testCase "null" $
-        renderDocument DNull @?= "A non DList was passed to renderDocument."
+  [
+      testCase "null" $
+        renderDocument DNull @?= "---\n~\n"
     , testCase "int" $
-        renderDocument (DInteger 5) @?= "A non DList was passed to renderDocument."
+        renderDocument (DInteger 5) @?= "---\n5\n"
     , testCase "DMap" $
-        renderDocument (DMap [("aaaaaa", DInteger 5), ("aaaaaa", DInteger 6)]) @?= "A non DList was passed to renderDocument."
+        renderDocument (DMap [("aaaaaa", DInteger 5),("bbbbbb", DInteger 6),("cccccc", DInteger 20)]) @?= "---\naaaaaa: 5\nbbbbbb: 6\ncccccc: 20\n"
     , testCase "DString" $
-        renderDocument (DString "{coords: [{col: 5, row: 6}]}") @?= "A non DList was passed to renderDocument."
+        renderDocument (DString "hello this is a test") @?= "---\n\"hello this is a test\"\n"
     , testCase "list of strings" $
-        renderDocument (DList [DString "5", DString "6"]) @?= "An even amount of DIntegers in DList were expected."
-    , testCase "list of odd ints" $
-        renderDocument (DList [DInteger 5, DInteger 6, DInteger 4]) @?= "An even amount of DIntegers in DList were expected."
+        renderDocument (DList [DString "5", DString "6"]) @?= "---\n- \"5\"\n- \"6\"\n"
     , testCase "list of ints" $
-        renderDocument (DList [DInteger 5, DInteger 6]) @?= listOfInts
+        renderDocument (DList [DInteger 5, DInteger 6, DInteger 4]) @?= "---\n- 5\n- 6\n- 4\n"
     , testCase "list of nulls" $
-        renderDocument (DList [DNull, DNull]) @?= "An even amount of DIntegers in DList were expected."
-    , testCase "list of list of ints" $
-        renderDocument ((DList ([DList([DInteger 5, DInteger 6])]))) @?= "An even amount of DIntegers in DList were expected."
-    -- IMPLEMENT more test cases:
-    -- * other primitive types/values
-    -- * nested types
+        renderDocument (DList [DNull, DNull]) @?= "---\n- ~\n- ~\n"
+    , testCase "list of int in map" $
+        renderDocument (DMap[("name", (DList [(DInteger 5), (DInteger 6)]))]) @?= "---\nname:\n- 5\n- 6\n"
+    , testCase "map in map in map" $
+        renderDocument (DMap[("hi", DMap[("hello", DMap[("end", DNull)])])]) @?= "---\nhi:\n- hello:\n  - end: ~\n"
+    , testCase "dmap in dlist in dmap" $
+        renderDocument (DMap [("title", (DList [(DMap [("end", DNull)])]))]) @?= "---\ntitle:\n- end: ~\n"
+    , testCase "coord list" $
+        renderDocument (DMap [("coords", (DList [DMap [("col",DInteger 0),("row",DInteger 8)],DMap[("col",DInteger 5),("row",DInteger 8)]]))]) @?= "---\ncoords:\n- col: 0\n  row: 8\n- col: 5\n  row: 8\n"
+    , testCase "tricky" $
+        renderDocument trickyCaseDocument @?= trickyCaseString
   ]
 
-listOfInts :: String
-listOfInts = "{coords: [{col: 5, row: 6}]}"
+trickyCaseDocument :: Document
+trickyCaseDocument =
+ DMap [
+    ("key1", DMap [
+        ("key2", DList [
+            DInteger 1,
+            DMap [
+                ("key3", DList [
+                    DInteger 1,
+                    DInteger 3,
+                    DNull,
+                    DMap [("", DList[
+                      DInteger 3,
+                      DNull
+                    ])],
+                    DMap []
+                ]),
+                ("key4", DString "")],
+            DNull
+        ])
+    ]),
+    ("key5", DList [])
+ ]
+trickyCaseString :: String
+trickyCaseString = unlines [
+    "---",
+    "key1:",
+    "- key2:",
+    "  - 1",
+    "  - key3:",
+    "    - 1",
+    "    - 3",
+    "    - ~",
+    "    - :",
+    "      - 3",
+    "      - ~",     
+    "    - []",
+    "    key4:",
+    "  - ~",
+    "key5: []"
+ ]
+
 
 gameStartTests :: TestTree
 gameStartTests = testGroup "Test start document" 

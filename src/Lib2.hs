@@ -19,10 +19,17 @@ instance ToDocument Check where
 -- IMPLEMENT
 -- Renders document to yaml
 renderDocument :: Document -> String
-renderDocument d = "---" ++ (formatYaml "\n" d)
+renderDocument d = "---" ++ (formatYaml "\n" d) ++ "\n"
+
+checkcheck :: String -> String
+checkcheck check
+    | elem ':' check = "\n" ++ init (init check) ++ "- "
+    | otherwise = check ++ "- "
 
 formatYaml :: String -> Document -> String
+formatYaml che (DList []) = if elem ':' che then ": []" else che
 formatYaml che (DList ds) = formatList (checkcheck che) ds
+
     where
         formatList :: String -> [Document] -> String
         formatList check (x:xs) = (if elem ':' check then ":" else "") ++ formatYaml (nextCheck check) x ++ formatList (nextCheck check) xs
@@ -30,20 +37,20 @@ formatYaml che (DList ds) = formatList (checkcheck che) ds
         nextCheck :: String -> String
         nextCheck check
             | elem ':' check = "\n" ++ (take ((length (check))-5) (cycle " ")) ++ "- "
-            | otherwise = check
-        checkcheck :: String -> String
-        checkcheck check
-            | elem ':' check = "\n" ++ init (init check) ++ "- "
-            | otherwise = check ++ "- "
+            | otherwise = init (init check) ++ "- "
+formatYaml che (DMap []) = che ++ "[]"
 formatYaml che (DMap ds) = formatMap che ds
     where
         formatMap :: String -> [(String, Document)] -> String
         formatMap _ [] = ""
-        formatMap check ((str,x):xs) = check ++ str ++ formatYaml ((if elem ':' check then "" else ":")++(nextCheck check) ++ "  ") x ++ formatMap (nextCheck check) xs
+        formatMap check ((str,x):xs) = checkMapCheck check ++ str ++ formatYaml ((if elem ':' check then "" else ":")++(nextCheck check) ++ "  ") x ++ formatMap (nextCheck check) xs
+        checkMapCheck :: String -> String
+        checkMapCheck check = if elem ':' check then init (init check) ++ "- " else check
         nextCheck :: String -> String
         nextCheck check
             | elem '-' check = "\n" ++ (take ((length (check))-1) (cycle " "))
             | otherwise = check
+formatYaml che (DString "") = (if (elem ':' che) then ":" else che) ++ ""
 formatYaml che (DString str) = (if (elem ':' che) then ": " else che) ++ "\"" ++ str ++ "\""
 formatYaml che (DInteger num) = (if (elem ':' che) then ": " else che) ++ (show num)
 formatYaml che DNull = (if (elem ':' che) then ": " else che) ++ "~"
