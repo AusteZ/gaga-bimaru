@@ -28,11 +28,11 @@ yamlToDocument :: Int -> [String] -> Document
 yamlToDocument _ [] = DNull
 yamlToDocument nr (str:[]) = yamlToDocument nr (str:"":[])
 yamlToDocument nr a@(str:next:strs)
+    | snd (stripWSStart (0,str)) == "" && (fst(stripWSStart(0,next)) > nr || (fst(stripWSStart(0,next)) == nr && isInfixOf "- " next)) = yamlToDocument nr (next:strs)
+    | snd (stripWSStart (0,str)) == "" && (fst(stripWSStart(0,next)) <= nr || next == "") = DString ""
     | head(snd (stripWSStart (0,str))) == '"' = DString (if last (stripWSBoth str) == '"' then (init (tail (stripWSBoth str))) else ((tail (snd(stripWSStart (0,str)))) ++ getString(yamlToDocument nr (next:strs))))
     | snd (stripWSStart (0,str)) == "[]" = (DList [])
     | snd (stripWSStart (0,str)) == "{}" = (DMap [])
-    | snd (stripWSStart (0,str)) == "" && (fst(stripWSStart(0,next)) > nr || (fst(stripWSStart(0,next)) == nr && isInfixOf "- " next)) = yamlToDocument nr (next:strs)
-    | snd (stripWSStart (0,str)) == "" && (fst(stripWSStart(0,next)) <= nr || next == "") = DString ""
     | isInfixOf "- " str = DList(listDList (fst (stripWSStart (0,str))) a)
     | isInfixOf ":" str = DMap(listDMap (fst (stripWSStart (0,str))) a)
     | otherwise = do
