@@ -14,7 +14,8 @@ main = defaultMain (testGroup "Tests" [
   fromYamlTests,
   gameStartTests,
   hintTests,
-  properties])
+  properties
+  ])
 
 properties :: TestTree
 properties = testGroup "Properties" [golden, dogfood]
@@ -33,60 +34,62 @@ golden = testGroup "Handles foreign rendering"
   ]
 
 dogfood :: TestTree
-dogfood = testGroup "Eating your own dogfood"
+dogfood = testGroup "Eating your own dogfood" 
   [  
     testProperty "parseDocument (renderDocument doc) == doc" $
       \doc -> parseDocument (renderDocument doc) == Right doc
   ]
 
-trickyCaseDocument :: Document
-trickyCaseDocument =
- DMap [
-    ("key1", DMap [
-        ("key2", DList [
-            DInteger 1,
-            DMap [
-                ("key3", DList [
-                    DInteger 1,
-                    DInteger 3,
-                    DNull,
-                    DMap [("", DList[
-                      DInteger 3,
-                      DNull
-                    ])],
-                    DMap []
-                ]),
-                ("key4", DString "")],
-            DNull
-        ])
-    ]),
-    ("key5", DList [])
- ]
-trickyCaseString = unlines [
-     "key1:",
-     "- key2:",
-     "  - 1",
-     "  - key3:",
-     "    - 1",
-     "    - 3",
-     "    - null",
-     "      - 3",
-     "      - null",     
-     "    - {}",
-     "    key4:",
-     "  - null",
-     "key5: []"
- ]
-
-
 fromYamlTests :: TestTree
 fromYamlTests = testGroup "Document from yaml"
   [   testCase "null" $
         parseDocument "null" @?= Right DNull
+    , testCase "String" $
+        parseDocument "abc" @?= Right (DString "abc") 
+    , testCase "StringWithSpace" $
+        parseDocument "ab c" @?= Right (DString "ab c")
+    , testCase "StringWithDoubleQuotation" $
+        parseDocument "\"ab c\"" @?= Right (DString "ab c")
+    , testCase "StringWithSingleQuotation" $
+        parseDocument "\'  \'" @?= Right (DString "  ")
+    , testCase "EmptyString" $
+        parseDocument "\'\'" @?= Right (DString "")
+    , testCase "Integer" $
+        parseDocument "5" @?= Right (DInteger 5) 
+    , testCase "NegativeInteger" $
+        parseDocument "-69" @?= Right (DInteger (-69))
+    , testCase "SingleList" $
+        parseDocument "- 5" @?= Right (DList [DInteger 5]) 
+    , testCase "List" $
+        parseDocument "- 5\n- null\n- ula" @?= Right (DList [DInteger 5, DNull, DString "ula"]) 
+    , testCase "NestedList" $
+        parseDocument "- 5\n- - null\n  - 45\n- ula" @?= Right (DList [DInteger 5, DList[DNull, DInteger 45], DString "ula"])
+    , testCase "EmptyList" $
+        parseDocument "[]" @?= Right (DList [])
+    , testCase "EmptyMap" $
+        parseDocument "{}" @?= Right (DMap [])
+    , testCase "SingleMap" $
+        parseDocument "key: 5" @?= Right (DMap [("key", DInteger 5)])
+    , testCase "Map" $
+        parseDocument "key: 5\nlala: 76\nkuku: null" @?= Right (DMap [("key", DInteger 5),("lala", DInteger 76),("kuku", DNull)])
+    , testCase "NestedMap" $
+        parseDocument "key:\n  lala: 76\n  kuku: null\nqaw: kzn" @?= Right (DMap [("key", DMap[("lala", DInteger 76),("kuku", DNull)]), ("qaw", DString "kzn")])
+    , testCase "ListInDMap" $
+        parseDocument "key:\n- 5\n- null\n- ula\nups: nepavyko" @?= Right (DMap [("key", DList [DInteger 5, DNull, DString "ula"]),("ups", DString "nepavyko")])
+    , testCase "MapInList" $
+        parseDocument "- key: 5\n  lala: 76\n  kuku: null\n- 56\n- null" @?= Right (DList[DMap [("key", DInteger 5),("lala", DInteger 76),("kuku", DNull)],DInteger 56, DNull]) 
+    
+    
     -- IMPLEMENT more test cases:
     -- * other primitive types/values
-    -- * nested types
+    -- * nested types 
   ]
+
+ttt :: Document
+ttt = DMap [("REndwJR",DList [DString "FEA",DInteger 6,DMap [("KUVcbOCE",DInteger 6),("u",DString "53")]]),("Bk",DList [])]
+
+dd :: Document
+dd = DList [DString "kf5",DMap [("Ja",DList [DList [DString ""],DMap [("P",DList [DString "k",DMap [("P",DInteger 1),("bjQ",DString " ")]]),("na",DString "x55")]]),("cEK",DList [])]]
 
 toYamlTests :: TestTree
 toYamlTests = testGroup "Document to yaml"
@@ -96,18 +99,19 @@ toYamlTests = testGroup "Document to yaml"
         renderDocument (DInteger 5) @?= "5"
     , testCase "list of ints" $
         renderDocument (DList [DInteger 5, DInteger 6]) @?= listOfInts
-    , testCase "tricky" $
-        renderDocument trickyCaseDocument @?= trickyCaseString
+    , testCase "friendlyEncode doc @?= renderDocument doc" $
+        friendlyEncode ttt @?= renderDocument ttt
+    , testCase "friendlyEncode doc @?= show doc" $
+        friendlyEncode dd @?= show dd 
     -- IMPLEMENT more test cases:
-    -- * other primitive types/values
-    -- * nested types
+    -- * other primitive types/values  
+    -- * nested types 
   ]
 
 listOfInts :: String
 listOfInts = unlines [
-      "---"
-    , "- 5"
-    , "- 6"
+      "- 5"
+    , "- 6" 
   ]
 
 gameStartTests :: TestTree

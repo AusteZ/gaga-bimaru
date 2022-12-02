@@ -26,35 +26,47 @@ parseDocument str = Right (yamlToDocument 0 (lines str))
 
 yamlToDocument :: Int -> [String] -> Document
 yamlToDocument _ [] = DNull
-yamlToDocument nr (str:[]) = yamlToDocument nr (str:"":[])
-yamlToDocument nr a@(str:next:strs)
-    | snd (stripWSStart (0,str)) == "" && (fst(stripWSStart(0,next)) > nr || (fst(stripWSStart(0,next)) == nr && isInfixOf "- " next)) = yamlToDocument nr (next:strs)
-    | snd (stripWSStart (0,str)) == "" && (fst(stripWSStart(0,next)) <= nr || next == "") = DString ""
-    | head(snd (stripWSStart (0,str))) == '"' = DString (if last (stripWSBoth str) == '"' then (init (tail (stripWSBoth str))) else ((tail (snd(stripWSStart (0,str)))) ++ getString(yamlToDocument nr (next:strs))))
-    | snd (stripWSStart (0,str)) == "[]" = (DList [])
-    | snd (stripWSStart (0,str)) == "{}" = (DMap [])
+yamlToDocument nr a@(str:strs)
     | isInfixOf "- " str = DList(listDList (fst (stripWSStart (0,str))) a)
     | isInfixOf ":" str = DMap(listDMap (fst (stripWSStart (0,str))) a)
+    | checkingNextLine strs = yamlToDocument nr strs
+    | str == "[]" || (wsAmount str == nr && drop (wsAmount str) str == "[]") = (DList [])
+    | str == "{}" || (wsAmount str == nr && drop (wsAmount str) str == "{}") = (DMap [])
     | otherwise = do
-        let strippedvalue = stripWSBoth str
-        let value = readMaybe strippedvalue :: Maybe Int-- :: Either String Int
+        let strippedValue = if wsAmount str == nr then drop (wsAmount str) str else str
+        let value = readMaybe strippedValue :: Maybe Int
         case value of
             Just a -> (DInteger a)
-            Nothing -> (if strippedvalue == "null" || strippedvalue == "~" then DNull else (DString str))
+            Nothing -> (if strippedValue == "null" || strippedValue == "~" then DNull else DString (stringparser strippedValue))
     where
         listDList :: Int -> [String] -> [Document]
-        listDList nr (str:strs) = if nr == (fst (stripWSStart (0,str))) && head (snd (stripWSStart (0,str))) == '-' 
-            then (yamlToDocument (nr+2) ((replaceDash str):strs)) : listDList nr strs else if nr >= (fst (stripWSStart (0,str)))
+        listDList nr (str:strs) = if nr == wsAmount str && head (drop nr str) == '-' 
+            then (yamlToDocument (nr+2) ((replaceDash str):strs)) : listDList nr strs else if nr >= wsAmount str
             then [] else listDList nr strs
         listDList _ [] = []
         listDMap :: Int -> [String] -> [(String, Document)]
-        listDMap nr a@(str:strs) = if nr /= (fst (stripWSStart (0,str))) || (isInfixOf "- " str && nr == (fst (stripWSStart (0,str)))) 
-            then if nr < (fst (stripWSStart (0,str))) then listDMap nr strs else []
-            else (stripWSBoth(fst (splitAtC str)), (yamlToDocument (fst (stripWSStart (0,fst (splitAtC str)))) (((snd (splitAtC str))):strs))):(listDMap nr strs)
+        listDMap nr a@(str:strs) = if nr == wsAmount str && isInfixOf ":" str  && isInfixOf "- " str == False
+            then (emptyKey (drop nr (fst (splitAtC str))), dmapInner nr a):(listDMap nr strs)
+            else if nr > wsAmount str then [] else listDMap nr strs
         listDMap _ [] = []
 
         replaceDash :: String -> String
-        replaceDash (ch1:ch2:str) = if (ch1:ch2:[]) == "- " then "  " ++ str else ch1 : replaceDash (ch2:str)
+        replaceDash (ch1:ch2:str) = if (ch1:ch2:[]) == "- " then "  " ++ str else if ch1 == ' ' then ch1 : replaceDash (ch2:str) else ch1:ch2:str
+        wsAmount :: String -> Int
+        wsAmount (ch:str) = if ch == ' ' then 1 + wsAmount str else 0
+        wsAmount [] = 0
+        emptyKey :: String -> String
+        emptyKey str = if length str >= 2 && head str == '\'' && last str == '\'' then init (tail str) else str
+        dmapInner :: Int -> [String] -> Document
+        dmapInner nr (str:strs) = if snd (splitAtC str) /= "" then yamlToDocument (wsAmount str) ((snd (splitAtC str)):[]) else yamlToDocument (checkForList nr strs) strs
+        checkForList :: Int -> [String] -> Int
+        checkForList nr (next:_) = if wsAmount next == nr && isInfixOf "- " next then nr else nr+1
+        checkForList nr _ = nr+1
+        checkingNextLine :: [String] -> Bool
+        checkingNextLine (str:next:_) = str == "" && (wsAmount next > nr || wsAmount next == nr && isInfixOf "- " next)
+        checkingNextLine _ = False
+        stringparser :: String -> String
+        stringparser str = if length str >= 2 && (head str == '\'' && last str == '\'' || head str == '"' && last str == '"') then init(tail str) else str
         stripWSStart :: (Int,String) -> (Int, String)
         stripWSStart (nr, (char:str)) = if char == ' ' then stripWSStart ((nr+1), str++"") else (nr,char:str++"")
         stripWSStart (nr, []) = (nr,"")
@@ -68,8 +80,6 @@ yamlToDocument nr a@(str:next:strs)
         getString :: Document -> String
         getString (DString x) = x
         getString _ = ""
-
-
 -- IMPLEMENT
 -- Change right hand side as you wish
 -- You will have to create an instance of FromDocument
