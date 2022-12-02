@@ -94,9 +94,9 @@ dd = DList [DString "kf5",DMap [("Ja",DList [DList [DString ""],DMap [("P",DList
 toYamlTests :: TestTree
 toYamlTests = testGroup "Document to yaml"
   [   testCase "null" $
-        renderDocument DNull @?= "null"
+        renderDocument DNull @?= "null\n"
     , testCase "int" $
-        renderDocument (DInteger 5) @?= "5"
+        renderDocument (DInteger 5) @?= "5\n"
     , testCase "list of ints" $
         renderDocument (DList [DInteger 5, DInteger 6]) @?= listOfInts
     , testCase "friendlyEncode doc @?= renderDocument doc" $
