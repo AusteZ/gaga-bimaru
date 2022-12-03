@@ -5,6 +5,7 @@ module Types (
     FromDocument, fromDocument
 ) where
 
+import qualified Data.Map as Map
 import qualified Data.Aeson as A
 import Data.Yaml as Y
 import Data.HashMap.Strict as HMS
@@ -34,10 +35,11 @@ data Coord = Coord {
 instance ToJSON Coord
 
 -- Document represents a document which is used to
--- communicate with a game server
+-- communicate with a game server 
+
 data Document =
     DMap [(String, Document)]
-    | DList [Document]
+    | DList [Document] 
     | DInteger Int
     | DString String
     | DNull
@@ -103,7 +105,7 @@ arbitraryDMap :: Gen Document
 arbitraryDMap = do
     s <- getSize
     n <- choose (0, min 4 s)
-    DMap <$> vectorOf n ((,) <$> arbitraryK <*> arbitraryDocument)
+    DMap . Map.toList . Map.fromList <$> vectorOf n ((,) <$> arbitraryK <*> arbitraryDocument)
     where
         arbitraryK = do
             s <- getSize

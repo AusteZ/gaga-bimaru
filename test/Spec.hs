@@ -76,10 +76,6 @@ fromYamlTests = testGroup "Document from yaml"
         parseDocument "key:\n- 5\n- null\n- ula\nups: nepavyko" @?= Right (DMap [("key", DList [DInteger 5, DNull, DString "ula"]),("ups", DString "nepavyko")])
     , testCase "MapInList" $
         parseDocument "- key: 5\n  lala: 76\n  kuku: null\n- 56\n- null" @?= Right (DList[DMap [("key", DInteger 5),("lala", DInteger 76),("kuku", DNull)],DInteger 56, DNull]) 
-    , testCase "(with renderDocument) - golden test that didn't work" $
-        parseDocument (renderDocument ddd) @?= Right ddd
-    , testCase "(with friendlyEncode) - golden test that didn't work " $
-        parseDocument (friendlyEncode ddd) @?= Right ddd
     -- , testCase "dsds" $
     --     parseDocument (friendlyEncode ddd) @?= parseDocument (renderDocument ddd)
     -- IMPLEMENT more test cases:
@@ -87,8 +83,11 @@ fromYamlTests = testGroup "Document from yaml"
     -- * nested types 
   ]
 
+dddddd:: Document
+dddddd = DMap [("Dfdnpf",DList [DMap [("FbEDMYTH",DString "49 bduC74Gjv 5i"),("jIyZN",DMap [("I",DList [DMap [("RKftOSdc",DList []),("TBoFBV",DList [DInteger (-36)]),("hpAYvixOC",DString "yfG X4WI99Sd")],DList []]),("QcPD",DMap [])]),("lMFsOL",DMap [("vvkWK",DInteger (-12))])],DMap [("ElZLEhnHa",DMap [("Ge",DList [DString "UYB 3F",DString "yX4 8 9vs7O"]),("IArxKPfQt",DInteger (-11))]),("GAyTAYUYw",DInteger (-19)),("WWCFrOeU",DString ""),("huz",DInteger (-35))],DList [DString "N 0yZd 77 1lum",DInteger 1,DString " N3c   "]]),("FudZZM",DString "4 5  1k"),("NsIEYTYGKy",DInteger 39),("tmWtmmjAq",DString "7Tx  ")]
 
 
+-- DList [DInteger 3]
 toYamlTests :: TestTree
 toYamlTests = testGroup "Document to yaml"
   [   testCase "null" $
@@ -97,6 +96,10 @@ toYamlTests = testGroup "Document to yaml"
         renderDocument (DInteger 5) @?= "5\n"
     , testCase "list of ints" $
         renderDocument (DList [DInteger 5, DInteger 6]) @?= listOfInts
+    , testCase "vdsdvs" $
+        renderDocument dddddd @?= ""
+    , testCase "trb" $
+        parseDocument (renderDocument dddddd) @?= Right dddddd
     -- IMPLEMENT more test cases:
     -- * other primitive types/values     
     -- * nested types   
@@ -113,13 +116,6 @@ gameStartTests = testGroup "Test start document" []
 
 hintTests :: TestTree
 hintTests = testGroup "Test hint document" []
-
-
-
-
-ddd :: Document
-ddd = DMap[("d", DNull), ("d", DString "aaa")]
-
 
 
 
