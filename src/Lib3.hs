@@ -19,11 +19,11 @@ errorDocType (DList _) = "DList"
 errorDocType (DMap _) = "DMap"
 errorDocType DNull = "DNull"
 
--- IMPLEMENT
--- Parses a document from yaml
-parseDocument :: String -> Either String Document
+-- IMPLEMENT 
+-- Parses a document from yaml 
+parseDocument :: String -> Either String Document 
 parseDocument str = do
-    let val = validateYaml (lines (str))
+    let val = validateYaml (lines (str)) 
     case val of
         Right a -> Right (yamlToDocument 0 a)
         Left b -> Left b
