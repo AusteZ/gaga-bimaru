@@ -32,7 +32,7 @@ gameStart _ _ = emptyState
 -- renders your game board
 render :: State -> String
 --render = show
-render (State g oR oC h hC) = init (glueStrings (inputGuesses 'x' g (inputGuesses 'o' hC (createBlankBoard oC oR)))) 
+render (State g oR oC _ hC) = init (glueStrings (inputGuesses 'x' g (inputGuesses 'o' hC (createBlankBoard oC oR)))) 
 
 createBlankBoard :: [Int] -> [Int] -> [String]
 createBlankBoard oC oR = ("   " ++ createHeaderOcc oC) : ("    A B C D E F G H I J") : createBlankLines oR 0
@@ -40,7 +40,7 @@ createHeaderOcc :: [Int] -> String
 createHeaderOcc (oc:ocs) = " " ++ (show oc) ++ createHeaderOcc ocs
 createHeaderOcc [] = []
 createBlankLines :: [Int] -> Int -> [String]
-createBlankLines (or:ors) nr = (show or ++ " " ++ show nr ++ " - - - - - - - - - -") : createBlankLines ors (nr+1)
+createBlankLines (or1:ors) nr = (show or1 ++ " " ++ show nr ++ " - - - - - - - - - -") : createBlankLines ors (nr+1)
 createBlankLines [] _ = []
 
 inputGuesses :: Char -> [Coord] -> [String] -> [String]
@@ -59,6 +59,7 @@ findRow _ _ _ _ [] = []
 findCol :: Char -> Int -> Int -> String -> String
 findCol ch nr c (ch1:ch2:str) = if nr == c then ch : ch2 : str else ch1:ch2:(findCol ch (nr+1) c str)
 findCol _ _ _ [] = []
+findCol _ _ _ _ = []
 
 glueStrings :: [String] -> String
 glueStrings (str:strs) = str ++ "\n" ++ glueStrings strs
@@ -80,17 +81,16 @@ addCoords ((a:b:[]):strxs)  = (if elem a ['A'..'J'] && elem b ['0'..'9']
     then [(Coord (addBoth 'A' 0 a) (addBoth '0' 0 b))] else []) ++ addCoords strxs
 addCoords (_:strxs) = addCoords strxs
 addCoords [] = []
-addCoords _ = []
 addBoth:: Char -> Int -> Char -> Int
 addBoth l i ch = if l == ch then i else addBoth (succ l) (i+1) ch 
 
 removeDublicates :: [Coord] -> [Coord]
-removeDublicates (c:all) = if elem c all then removeDublicates (coordEquals c all)
-else c:(removeDublicates all)
+removeDublicates (c:al) = if elem c al then removeDublicates (coordEquals c al)
+    else c:(removeDublicates al)
 removeDublicates c = c
 
 coordEquals :: Coord -> [Coord] -> [Coord]
-coordEquals c (e:all) = if c == e then all else e:(coordEquals c (all))
+coordEquals c (e:al) = if c == e then al else e:(coordEquals c (al))
 coordEquals _ [] = []
 -- IMPLEMENT
 -- Adds hint data to the game state
