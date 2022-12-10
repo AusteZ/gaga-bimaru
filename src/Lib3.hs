@@ -8,13 +8,13 @@ import Types
 -- import Types ( Document, FromDocument, fromDocument )
 import Lib1 (State(..))
 -- import Data.Text as T
-import Data.List
+import qualified Data.List as L
 import Text.Read
 import Data.Either
 
 errorDocType :: Document -> String
 errorDocType (DInteger _) = "DInteger"
-errorDocType (DString _) = "DString"
+errorDocType (DString _) = "DString" 
 errorDocType (DList _) = "DList"
 errorDocType (DMap _) = "DMap"
 errorDocType DNull = "DNull"
@@ -31,8 +31,8 @@ parseDocument str = do
 yamlToDocument :: Int -> [String] -> Document
 yamlToDocument _ [] = DNull
 yamlToDocument nr a@(str:strs)
-    | isInfixOf "- " str && head (drop (wsAmount str) str) == '-' = DList(listDList (wsAmount str) a)
-    | isInfixOf ":" str = DMap(listDMap (wsAmount str) a)
+    | L.isInfixOf "- " str && head (drop (wsAmount str) str) == '-' = DList(listDList (wsAmount str) a)
+    | L.isInfixOf ":" str = DMap(listDMap (wsAmount str) a)
     | checkingNextLine strs = yamlToDocument nr strs
     | str == "[]" || (wsAmount str == nr && drop (wsAmount str) str == "[]") = (DList [])
     | str == "{}" || (wsAmount str == nr && drop (wsAmount str) str == "{}") = (DMap [])
@@ -49,7 +49,7 @@ yamlToDocument nr a@(str:strs)
             then [] else listDList nrr strss
         listDList _ [] = []
         listDMap :: Int -> [String] -> [(String, Document)]
-        listDMap nrr al@(str1:strss) = if nrr == wsAmount str1 && isInfixOf ":" str1  && isInfixOf "- " str1 == False
+        listDMap nrr al@(str1:strss) = if nrr == wsAmount str1 && L.isInfixOf ":" str1  && L.isInfixOf "- " str1 == False
             then (emptyKey (drop nrr (fst (splitAtC str1))), dmapInner nrr al):(listDMap nrr strss)
             else if nrr > wsAmount str1 then [] else listDMap nrr strss
         listDMap _ [] = []
@@ -60,10 +60,10 @@ yamlToDocument nr a@(str:strs)
         dmapInner nrr (str1:strss) = if snd (splitAtC str1) /= "" then yamlToDocument (wsAmount str1) ((snd (splitAtC str1)):[]) else yamlToDocument (checkForList nrr strss) strss
         dmapInner _ _ = DNull
         checkForList :: Int -> [String] -> Int
-        checkForList nr1 (next:_) = if wsAmount next == nr1 && isInfixOf "- " next then nr1 else nr1+1
+        checkForList nr1 (next:_) = if wsAmount next == nr1 && L.isInfixOf "- " next then nr1 else nr1+1
         checkForList nr1 _ = nr1+1
         checkingNextLine :: [String] -> Bool
-        checkingNextLine (str1:next:_) = str1 == "" && (wsAmount next > nr || wsAmount next == nr && isInfixOf "- " next)
+        checkingNextLine (str1:next:_) = str1 == "" && (wsAmount next > nr || wsAmount next == nr && L.isInfixOf "- " next)
         checkingNextLine _ = False
 
 
@@ -101,13 +101,13 @@ validateYaml strs = if fst (checkForEmptyLines (False, strs)) then Left "Empty l
         checkSymbols _ ("":[]) = Right [""]
         checkSymbols _ [] = Right [] 
         checkSymbols nr (str:strss)
-            | isInfixOf "- " str && head (drop (wsAmount str) str) == '-' = if getThroughDashes (drop (wsAmount str) str) == "" then Left ("List has no element, and is not marked as empty")
+            | L.isInfixOf "- " str && head (drop (wsAmount str) str) == '-' = if getThroughDashes (drop (wsAmount str) str) == "" then Left ("List has no element, and is not marked as empty")
                 else if fst (errorOneLine nr ((getThroughDashes (drop (wsAmount str) str)))) then Left (snd (errorOneLine nr ((getThroughDashes (drop (wsAmount str) str))))) else (do
                     let cS = checkSymbols (nr+1) (strss)
                     case cS of
                         Right a -> return (str:a)
                         Left b -> Left b)
-            | isInfixOf ":" str = if getThroughDashes (drop (wsAmount str) (fst (splitAtC str))) == "" then Left ("Key cannot be totally empty and not marked ''")
+            | L.isInfixOf ":" str = if getThroughDashes (drop (wsAmount str) (fst (splitAtC str))) == "" then Left ("Key cannot be totally empty and not marked ''")
                 else if snd (splitAtC str) == "" && last str == ' ' then Left ("Please either mark empty string as '' or delete the space after ':'") 
                 else do
                     let cS = checkSymbols (nr+1) (strss)
@@ -121,10 +121,10 @@ validateYaml strs = if fst (checkForEmptyLines (False, strs)) then Left "Empty l
         checkIndent _ _ _ [] = (False, "")
         checkIndent _ _ _ [""] = (False, "")
         checkIndent (f, l, m, s) nr idd (str:strss)
-            | (f || l) && isInfixOf "- " str && (2 + wsAmount str == idd || (f && idd == 0)) = if fst (checkIndent (True, False, False, False) nr (idd+(if idd == 0 then 4 else 2)) ((replaceDash str):strss))
+            | (f || l) && L.isInfixOf "- " str && (2 + wsAmount str == idd || (f && idd == 0)) = if fst (checkIndent (True, False, False, False) nr (idd+(if idd == 0 then 4 else 2)) ((replaceDash str):strss))
                 then (checkIndent (True, False, False, False) nr (idd+(if idd == 0 then 4 else 2)) ((replaceDash str):strss))
                 else (checkIndent (False, True, False, False) nr (idd+(if idd == 0 then 2 else 0)) (strss))
-            | (f || m) && isInfixOf ":" str && wsAmount str == idd = if last str /= ':' && fst (checkIndent (False, False, True, True) (nr+1) idd strss) 
+            | (f || m) && L.isInfixOf ":" str && wsAmount str == idd = if last str /= ':' && fst (checkIndent (False, False, True, True) (nr+1) idd strss) 
                 then (checkIndent (False, False, True, True) (nr+1) idd strss)
                 else if fst (checkIndent (True, False, False, False) (nr+1) (idd+2) strss) then (True, (snd (checkIndent (True, False, False, False) (nr+1) (idd+2) strss)) ++ "False" ++ str)
                 else (checkIndent (False, True, False, False) (nr+1) idd strss)
@@ -143,7 +143,7 @@ validateYaml strs = if fst (checkForEmptyLines (False, strs)) then Left "Empty l
         getThroughDashes (ch1:ch2:str) = if ch1:ch2:[] == "- " then getThroughDashes str else ch1:ch2:str
         getThroughDashes str = str
         errorOneLine :: Int -> String -> (Bool,String)
-        errorOneLine nr str = if isInfixOf ":" str == False then (False,str) else do
+        errorOneLine nr str = if L.isInfixOf ":" str == False then (False,str) else do
             let ess = (checkSymbols nr (str:"":[]))
             case ess of
                 Right _ -> (False, "")

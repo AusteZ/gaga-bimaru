@@ -1,0 +1,13 @@
+<Document> ::= <DNull> | <DInteger> | <DString> | <DList> | <DMap>
+
+<DInteger> ::= integer
+<DNull> ::= <indent> "null" ["\n"]
+
+<DNull> ::= <indent> "null" ["\n"]
+<DInteger> ::= <indent> <digit>* ["\n"] 
+<DString> ::= ["/'"] <indent> <string>* ["/'"] ["\n"] | <indent> ["/""] <string>* ["/""] ["\n"] | <indent> ["/'"] *<symbol> ["/'"] ["\n"]
+<DList> ::= <indent> <Document>
+<DMap> ::= <indent> <string> ([": "] | [":"]) <Document>
+<string> ::= <symbol>* 
+<indent> ::= "  "* | "  "* + "- "* 
+<symbol> ::= char
